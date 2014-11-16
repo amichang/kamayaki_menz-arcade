@@ -77,12 +77,12 @@
 
 // アケコンLED位置
 #define L_SYNC    0
-#define L_CUE     1
+#define L_SHUTTER 1
 #define L_PLAY    2
-#define L_SHUTTER 3
-#define R_SHUTTER 4
+#define L_CUE     3
+#define R_CUE     4
 #define R_PLAY    5
-#define R_CUE     6
+#define R_SHUTTER 6
 #define R_SYNC    7
 
 // Port Type
@@ -121,17 +121,17 @@ const unsigned char ifAssignMux0[16] = {
   0
 };
 const unsigned char ifAssignMux1[16] = {
-  DECK_A_SHUTTER,
-  DECK_A_PLAY,
   DECK_A_CUE,
+  DECK_A_PLAY,
+  DECK_A_SHUTTER,
   DECK_A_SYNC,
   DECK_A_PFL,
   DECK_A_FX,
   DECK_A_SCRATCH,
   0,
-  DECK_B_SHUTTER,
-  DECK_B_PLAY,
   DECK_B_CUE,
+  DECK_B_PLAY,
+  DECK_B_SHUTTER,
   DECK_B_SYNC,
   DECK_B_PFL,
   DECK_B_FX,

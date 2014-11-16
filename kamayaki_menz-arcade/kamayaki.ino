@@ -32,7 +32,7 @@ int diffAnalogValueMux2;
 // 各配列にどのLEDがアサインされているかはdefineで定義
 char ledStatus = 0xFF;
 
-//(clock(green), data(white), ncs(purple))   
+//(  clock(green), data(white), ncs(purple))
 A5020 jog_a(JOG_A_CLOCK, JOG_A_DATA, JOG_A_NCS);
 A5020 jog_b(JOG_B_CLOCK, JOG_B_DATA, JOG_B_NCS);
 
@@ -44,6 +44,8 @@ Adafruit_NeoPixel acheconLed = Adafruit_NeoPixel(ACHECONLED_NUM, LED_DATA, NEO_R
 //---FOR DEBUG
 //SoftwareSerial mySerial(11, 12, true);
 //---FOR DEBUG
+
+MIDI_CREATE_DEFAULT_INSTANCE();
 
 void setup() {
   // シフトレジスタ用ピンの初期化
@@ -58,8 +60,8 @@ void setup() {
   // 光学センサを初期化
   jog_a.reset();
   delay(100);
-//  jog_b.reset();
-//  delay(100);
+  jog_b.reset();
+  delay(100);
 
   // MIDIライブラリ初期化
   MIDI.begin(1);
@@ -104,8 +106,6 @@ void loop() {
       if(portTypeMux0[i] == 0){
         if(diffAnalogValueMux0 >= DIGITAL_THRESHOLD){
           MIDI.sendNoteOn(ifAssignMux0[i], convAD(currMux0Value[i]), CHANNEL_1);
-          // Serial.print(i, DEC);
-          // Serial.println(currMux0Value[i], HEX);
           prevMux0Value[i] = currMux0Value[i];
         }
       }
@@ -113,8 +113,6 @@ void loop() {
         // ノイズでなければ、読み取り値をCCとして出力
         if(diffAnalogValueMux0 >= VIBRATE_FILTER){
           MIDI.sendControlChange(ifAssignMux0[i], currMux0Value[i]/8, CHANNEL_1);
-          // Serial.print(i, DEC);
-          // Serial.println(currMux0Value[i], HEX);
           prevMux0Value[i] = currMux0Value[i];
         }
       }
@@ -129,8 +127,6 @@ void loop() {
       if(portTypeMux1[i] == 0){
         if(diffAnalogValueMux1 >= DIGITAL_THRESHOLD){
           MIDI.sendNoteOn(ifAssignMux1[i], convAD(currMux1Value[i]), CHANNEL_1);
-          // Serial.print(i, DEC);
-          // Serial.println(currMux1Value[i], HEX);
           prevMux1Value[i] = currMux1Value[i];
         }
       }
@@ -138,8 +134,6 @@ void loop() {
         // ノイズでなければ、読み取り値をCCとして出力
         if(diffAnalogValueMux1 >= VIBRATE_FILTER){
           MIDI.sendControlChange(ifAssignMux1[i], currMux1Value[i]/8, CHANNEL_1);
-          // Serial.print(i, DEC);
-          // Serial.println(currMux1Value[i], HEX);
           prevMux1Value[i] = currMux1Value[i];
         }
       }
@@ -154,8 +148,6 @@ void loop() {
       if(portTypeMux2[i] == 0){
         if(diffAnalogValueMux2 >= DIGITAL_THRESHOLD){
           MIDI.sendNoteOn(ifAssignMux2[i], convAD(currMux2Value[i]), CHANNEL_1);
-          // Serial.print(i, DEC);
-          // Serial.println(currMux2Value[i], HEX);
           prevMux2Value[i] = currMux2Value[i];
         }
       }
@@ -163,8 +155,6 @@ void loop() {
         // ノイズでなければ、読み取り値をCCとして出力
         if(diffAnalogValueMux2 >= VIBRATE_FILTER){
           MIDI.sendControlChange(ifAssignMux2[i], (int)currMux2Value[i]/8, CHANNEL_1);
-          // Serial.print(i, DEC);
-          // Serial.println(currMux2Value[i], HEX);
           prevMux2Value[i] = currMux2Value[i];
         }
       }
@@ -173,12 +163,11 @@ void loop() {
       }
     }
   }
+  
   jog_a.read();
   // 動きがあれば、MIDIデータとして送信
   if(jog_a.motion){
     MIDI.sendControlChange(DECK_A_JOG, conv_midiscale(jog_a.delta_y), CHANNEL_1);
-    // Serial.println("AAAAA");
-    // Serial.println(jog_a.delta_y, HEX);
   }
 
   // Bデッキのジョグの状態を読み取る
@@ -186,8 +175,6 @@ void loop() {
   // 動きがあれば、MIDIデータとして送信
   if(jog_b.motion){
     MIDI.sendControlChange(DECK_B_JOG, conv_midiscale(jog_b.delta_y), CHANNEL_1);
-    // Serial.println("BBBBB");
-    // Serial.println(jog_b.delta_y, HEX);
   }
 
   // 受信したMIDIデータの読み込み
@@ -195,8 +182,8 @@ void loop() {
 }
 
 char convAD(int analogVal){
-  if(analogVal > DIGITAL_THRESHOLD) return 127;
-  else return 0;
+  if(analogVal > DIGITAL_THRESHOLD) return 0;
+  else return 127;
 }
 
 char conv_midiscale(char value){
@@ -236,7 +223,7 @@ void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
 }
 
 void HandleNoteOn(byte channel, byte pitch, byte velocity) {
-  if(velocity > 5){
+  if(velocity > 0){
     // NoteOnの時にデータによって対応するLEDを点灯させる
     /*
      * LEDの状態が00001000の時に、PLAY(0x01)が押されたとすると、
@@ -251,6 +238,18 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity) {
       break;
     case DECK_B_PLAY:
       acheconLedSet(R_PLAY, 127, 0, 0);
+      break;
+    case DECK_A_CUE:
+      acheconLedSet(L_CUE, 127, 0, 0);
+      break;
+    case DECK_B_CUE:
+      acheconLedSet(R_CUE, 127, 0, 0);
+      break;
+    case DECK_A_SHUTTER:
+      acheconLedSet(L_SHUTTER, 0, 127, 127);
+      break;
+    case DECK_B_SHUTTER:
+      acheconLedSet(R_SHUTTER, 0, 127, 127);
       break;
     case DECK_A_PFL:
       ledStatus &= ~L_HEAD;
@@ -293,6 +292,18 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity) {
       break;
     case DECK_B_PLAY:
       acheconLedSet(R_PLAY, 0, 127, 0);
+      break;
+    case DECK_A_CUE:
+      acheconLedSet(L_CUE, 0, 0, 0);
+      break;
+    case DECK_B_CUE:
+      acheconLedSet(R_CUE, 0, 0, 0);
+      break;
+    case DECK_A_SHUTTER:
+      acheconLedSet(L_SHUTTER, 0, 0, 0);
+      break;
+    case DECK_B_SHUTTER:
+      acheconLedSet(R_SHUTTER, 0, 0, 0);
       break;
     case DECK_A_PFL:
       ledStatus |= L_HEAD;
@@ -339,6 +350,18 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity) {
       break;
     case DECK_B_PLAY:
       acheconLedSet(R_PLAY, 127, 0, 0);
+      break;
+    case DECK_A_CUE:
+      acheconLedSet(L_CUE, 127, 0, 0);
+      break;
+    case DECK_B_CUE:
+      acheconLedSet(R_CUE, 127, 0, 0);
+      break;
+    case DECK_A_SHUTTER:
+      acheconLedSet(L_SHUTTER, 127, 0, 0);
+      break;
+    case DECK_B_SHUTTER:
+      acheconLedSet(L_SHUTTER, 127, 0, 0);
       break;
     case DECK_A_PFL:
       ledStatus |= L_HEAD;
